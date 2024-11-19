@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cek Rekening Bank</title>
+    <style>
+        /* CSS untuk desain */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            color: #555;
+        }
+
+        select, input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        pre {
+            text-align: left;
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .loading {
+            font-size: 14px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cek Rekening Bank</h1>
+        
+        <label for="bank">Pilih Bank:</label>
+        <select id="bank">
+            <option value="" class="loading">Memuat daftar bank...</option>
+        </select>
+
+        <label for="accountNumber">Nomor Rekening:</label>
+        <input type="text" id="accountNumber" placeholder="Masukkan nomor rekening">
+
+        <button id="checkAccount">Cek Rekening</button>
+
+        <h3>Hasil:</h3>
+        <pre id="result">Belum ada data</pre>
+    </div>
+
+    <script>
+        const bankDropdown = document.getElementById('bank');
+        const resultDisplay = document.getElementById('result');
+        const checkButton = document.getElementById('checkAccount');
+
+        // 1. Ambil daftar bank dari API
+        fetch('https://api-rekening.lfourr.com/listBank')
+            .then(response => response.json())
+            .then(data => {
+                bankDropdown.innerHTML = '<option value="">Pilih Bank</option>'; // Hapus placeholder
+                data.forEach(bank => {
+                    const option = document.createElement('option');
+                    option.value = bank.bankCode;
+                    option.textContent = bank.bankName;
+                    bankDropdown.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Gagal memuat daftar bank:', error);
+                bankDropdown.innerHTML = '<option value="">Gagal memuat daftar bank</option>';
+            });
+
+        // 2. Pengecekan nomor rekening
+        checkButton.addEventListener('click', () => {
+            const bankCode = bankDropdown.value;
+            const accountNumber = document.getElementById('accountNumber').value;
+
+            if (!bankCode || !accountNumber) {
+                alert('Pilih bank dan masukkan nomor rekening!');
+                return;
+            }
+
+            const url = `https://api-rekening.lfourr.com/getBankAccount?bankCode=${bankCode}&accountNumber=${accountNumber}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultDisplay.textContent = `Nama Pemilik: ${data.accountName}\nNomor Rekening: ${data.accountNumber}\nBank: ${data.bankName}`;
+                    } else {
+                        resultDisplay.textContent = `Error: ${data.message}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Gagal memeriksa rekening:', error);
+                    resultDisplay.textContent = 'Gagal memeriksa rekening. Periksa koneksi atau coba lagi nanti.';
+                });
+        });
+    </script>
+</body>
+</html>
